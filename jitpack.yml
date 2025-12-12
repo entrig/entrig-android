@@ -4,4 +4,4 @@ before_install:
   - sdk install java 17.0.12-tem
   - sdk use java 17.0.12-tem
 install:
-  - ./gradlew clean build install -x :example:build -x test -x lint --stacktrace
+  - ./gradlew clean build publishToMavenLocal -x :example:build -x test -x lint --stacktrace
