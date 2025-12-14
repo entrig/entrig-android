@@ -196,7 +196,10 @@ object Entrig {
         if (appContext != null) {
             val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val savedUserId = prefs.getString(KEY_USER_ID, null)
-            Log.d(TAG, "Checking existing registration: savedUserId=$savedUserId, newUserId=$userId")
+            Log.d(
+                TAG,
+                "Checking existing registration: savedUserId=$savedUserId, newUserId=$userId"
+            )
 
             if (savedUserId == userId) {
                 Log.d(TAG, "Already registered with userId: $userId, skipping registration")
@@ -206,7 +209,10 @@ object Entrig {
         }
 
         // Check if we need to request permission (Android 13+)
-        Log.d(TAG, "Checking permissions: handlePermission=${cfg.handlePermission}, SDK_INT=${Build.VERSION.SDK_INT}")
+        Log.d(
+            TAG,
+            "Checking permissions: handlePermission=${cfg.handlePermission}, SDK_INT=${Build.VERSION.SDK_INT}"
+        )
         if (cfg.handlePermission &&
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
         ) {
@@ -214,7 +220,10 @@ object Entrig {
                 context,
                 Manifest.permission.POST_NOTIFICATIONS
             )
-            Log.d(TAG, "POST_NOTIFICATIONS permission status: $permissionStatus (GRANTED=${PackageManager.PERMISSION_GRANTED})")
+            Log.d(
+                TAG,
+                "POST_NOTIFICATIONS permission status: $permissionStatus (GRANTED=${PackageManager.PERMISSION_GRANTED})"
+            )
 
             if (permissionStatus != PackageManager.PERMISSION_GRANTED) {
                 Log.d(TAG, "Permission not granted, requesting permission")
@@ -309,7 +318,10 @@ object Entrig {
             val callback = pendingRegistrationCallback
             val appContext = applicationContext
 
-            Log.d(TAG, "Pending state: userId=$userId, hasCallback=${callback != null}, hasContext=${appContext != null}")
+            Log.d(
+                TAG,
+                "Pending state: userId=$userId, hasCallback=${callback != null}, hasContext=${appContext != null}"
+            )
 
             if (userId != null && appContext != null) {
                 Log.d(TAG, "Proceeding with pending registration")
@@ -468,7 +480,10 @@ object Entrig {
         scope.launch(Dispatchers.IO) {
             Log.d(TAG, "Running registration on IO dispatcher")
             val result = fcmManager.register(context, userId)
-            Log.d(TAG, "FCMManager.register() returned: success=${result.isSuccess}, error=${result.exceptionOrNull()?.message}")
+            Log.d(
+                TAG,
+                "FCMManager.register() returned: success=${result.isSuccess}, error=${result.exceptionOrNull()?.message}"
+            )
 
             launch(Dispatchers.Main) {
                 Log.d(TAG, "Switching to Main dispatcher for callback")

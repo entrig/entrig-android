@@ -60,8 +60,20 @@ class MainActivity : AppCompatActivity() {
 
         loadUserAndGroups()
 
-        Entrig.setOnNotificationReceivedListener { notification ->
+        // Setup notification listeners
+        Entrig.setOnForegroundNotificationListener { notification ->
             Toast.makeText(this, "Notification received: ${notification.title}", Toast.LENGTH_SHORT).show()
+        }
+
+        Entrig.setOnNotificationOpenedListener { notification ->
+            // Handle notification tap - navigate based on type
+            notification.data?.get("group_id")?.toString()?.let { groupId ->
+                val groupName = notification.data?.get("group_name")?.toString() ?: "Group"
+                val intent = Intent(this, ChatActivity::class.java)
+                intent.putExtra("group_id", groupId)
+                intent.putExtra("group_name", groupName)
+                startActivity(intent)
+            }
         }
     }
 
