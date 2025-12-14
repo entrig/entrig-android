@@ -13,8 +13,8 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import java.lang.ref.WeakReference
 import com.entrig.sdk.callbacks.OnInitializationListener
-import com.entrig.sdk.callbacks.OnNotificationClickListener
-import com.entrig.sdk.callbacks.OnNotificationReceivedListener
+import com.entrig.sdk.callbacks.OnNotificationOpenedListener
+import com.entrig.sdk.callbacks.OnForegroundNotificationListener
 import com.entrig.sdk.callbacks.OnRegistrationListener
 import com.entrig.sdk.internal.FCMManager
 import com.entrig.sdk.internal.KEY_USER_ID
@@ -48,12 +48,12 @@ import kotlinx.coroutines.launch
  * }
  *
  * // Listen for notifications
- * Entrig.setOnNotificationReceivedListener { notification ->
+ * Entrig.setOnForegroundNotificationListener { notification ->
  *     // Handle foreground notification
  * }
  *
- * Entrig.setOnNotificationClickListener { notification ->
- *     // Handle notification click
+ * Entrig.setOnNotificationOpenedListener { notification ->
+ *     // Handle notification opened/clicked
  * }
  * ```
  */
@@ -68,8 +68,8 @@ object Entrig {
     // Application context stored during initialization (safe for singleton - same lifecycle)
     private var applicationContext: Context? = null
     private var config: EntrigConfig? = null
-    private var onNotificationReceivedListener: OnNotificationReceivedListener? = null
-    private var onNotificationClickListener: OnNotificationClickListener? = null
+    private var onForegroundNotificationListener: OnForegroundNotificationListener? = null
+    private var onNotificationOpenedListener: OnNotificationOpenedListener? = null
     private var cachedInitialNotification: NotificationEvent? = null
     private var initialNotificationConsumed = false
 
@@ -77,15 +77,25 @@ object Entrig {
     private var pendingUserId: String? = null
     private var pendingRegistrationCallback: OnRegistrationListener? = null
 
+    // Track processed intents to avoid duplicate handling
+    private val processedIntents = mutableSetOf<String>()
+
     // Activity lifecycle tracking with WeakReference to prevent memory leaks
     // Suppressed: WeakReference allows GC, and lifecycle callbacks clear the reference
     @android.annotation.SuppressLint("StaticFieldLeak")
     private var currentActivity: WeakReference<Activity>? = null
     private val activityLifecycleCallbacks = object : Application.ActivityLifecycleCallbacks {
-        override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
+        override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
+            // Automatically handle notification clicks when activity is created
+            processIntentOnce(activity.intent)
+        }
+
         override fun onActivityStarted(activity: Activity) {}
+
         override fun onActivityResumed(activity: Activity) {
             currentActivity = WeakReference(activity)
+            // Automatically handle notification clicks when activity resumes (handles onNewIntent)
+            processIntentOnce(activity.intent)
         }
 
         override fun onActivityPaused(activity: Activity) {
@@ -196,8 +206,8 @@ object Entrig {
         }
 
         // Check if we need to request permission (Android 13+)
-        Log.d(TAG, "Checking permissions: handlePermissionAutomatically=${cfg.handlePermissionAutomatically}, SDK_INT=${Build.VERSION.SDK_INT}")
-        if (cfg.handlePermissionAutomatically &&
+        Log.d(TAG, "Checking permissions: handlePermission=${cfg.handlePermission}, SDK_INT=${Build.VERSION.SDK_INT}")
+        if (cfg.handlePermission &&
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
         ) {
             val permissionStatus = ContextCompat.checkSelfPermission(
@@ -356,18 +366,18 @@ object Entrig {
      * @param listener Callback to handle foreground notifications
      */
     @JvmStatic
-    fun setOnNotificationReceivedListener(listener: OnNotificationReceivedListener?) {
-        onNotificationReceivedListener = listener
+    fun setOnForegroundNotificationListener(listener: OnForegroundNotificationListener?) {
+        onForegroundNotificationListener = listener
     }
 
     /**
-     * Sets a listener for notification click events.
+     * Sets a listener for notification opened events.
      *
-     * @param listener Callback to handle notification clicks
+     * @param listener Callback to handle notification opened from any state
      */
     @JvmStatic
-    fun setOnNotificationClickListener(listener: OnNotificationClickListener?) {
-        onNotificationClickListener = listener
+    fun setOnNotificationOpenedListener(listener: OnNotificationOpenedListener?) {
+        onNotificationOpenedListener = listener
     }
 
     /**
@@ -388,28 +398,58 @@ object Entrig {
     }
 
     /**
-     * Call this method from your Activity's onCreate or onNewIntent to handle notification clicks.
+     * Processes an intent once to avoid duplicate notification handling.
+     * This is called automatically by the SDK via ActivityLifecycleCallbacks.
+     * You can also call it manually from onCreate/onNewIntent if needed.
      *
-     * @param intent The intent from onCreate or onNewIntent
+     * @param intent The intent to process
      */
     @JvmStatic
     fun handleIntent(intent: Intent?) {
+        processIntentOnce(intent)
+    }
+
+    // Internal methods
+
+    private fun processIntentOnce(intent: Intent?) {
         val notificationData = extractNotificationData(intent) ?: return
+
+        // Use message ID as unique identifier to prevent duplicate processing
+        val messageId = intent?.extras?.getString("google.message_id") ?: return
+
+        // Check if already processed
+        if (processedIntents.contains(messageId)) {
+            Log.d(TAG, "Intent already processed: $messageId")
+            return
+        }
+
+        // Mark as processed
+        processedIntents.add(messageId)
+        Log.d(TAG, "Processing notification intent: $messageId")
+
+        // Limit set size to prevent memory leak
+        if (processedIntents.size > 100) {
+            val iterator = processedIntents.iterator()
+            repeat(50) {
+                if (iterator.hasNext()) {
+                    iterator.next()
+                    iterator.remove()
+                }
+            }
+        }
 
         if (!initialNotificationConsumed) {
             // Cache as initial notification if not yet consumed
             cachedInitialNotification = notificationData
         }
 
-        // Notify click listener
-        onNotificationClickListener?.onNotificationClick(notificationData)
+        // Notify opened listener
+        onNotificationOpenedListener?.onNotificationOpened(notificationData)
     }
-
-    // Internal methods
 
     internal fun notifyNotificationReceived(notification: NotificationEvent) {
         scope.launch(Dispatchers.Main) {
-            onNotificationReceivedListener?.onNotificationReceived(notification)
+            onForegroundNotificationListener?.onForegroundNotification(notification)
         }
     }
 

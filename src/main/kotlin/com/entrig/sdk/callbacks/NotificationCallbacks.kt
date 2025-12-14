@@ -5,25 +5,25 @@ import com.entrig.sdk.models.NotificationEvent
 /**
  * Callback interface for handling notification events when app is in foreground.
  */
-fun interface OnNotificationReceivedListener {
+fun interface OnForegroundNotificationListener {
     /**
      * Called when a notification is received while the app is in foreground.
      *
      * @param notification The notification event data
      */
-    fun onNotificationReceived(notification: NotificationEvent)
+    fun onForegroundNotification(notification: NotificationEvent)
 }
 
 /**
- * Callback interface for handling notification clicks.
+ * Callback interface for handling notification opened events.
  */
-fun interface OnNotificationClickListener {
+fun interface OnNotificationOpenedListener {
     /**
-     * Called when user clicks on a notification.
+     * Called when user opens a notification from any state (foreground, background, terminated).
      *
      * @param notification The notification event data
      */
-    fun onNotificationClick(notification: NotificationEvent)
+    fun onNotificationOpened(notification: NotificationEvent)
 }
 
 /**
