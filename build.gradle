@@ -12,6 +12,10 @@ buildscript {
     }
 }
 
+plugins {
+    id("com.vanniktech.maven.publish") version "0.30.0"
+}
+
 allprojects {
     repositories {
         google()
@@ -21,9 +25,9 @@ allprojects {
 
 apply plugin: "com.android.library"
 apply plugin: "kotlin-android"
-apply plugin: 'maven-publish'
+apply plugin: "com.vanniktech.maven.publish"
 
-group = "com.github.entrig"
+group = "com.entrig"
 version = "0.0.2-dev"
 
 android {
@@ -74,20 +78,37 @@ android {
     }
 }
 
-afterEvaluate {
-    publishing {
-        publications {
-            release(MavenPublication) {
-                from components.release
-                groupId = 'com.github.entrig'
-                artifactId = 'entrig-android'
-                version = '0.0.2-dev'
+mavenPublishing {
+    publishToMavenCentral("CENTRAL_PORTAL")
+    signAllPublications()
+
+    coordinates("com.entrig", "entrig-android", "0.0.2-dev")
+
+    pom {
+        name = "Entrig Android SDK"
+        description = "Push notifications for Supabase"
+        url = "https://github.com/entrig/entrig-android"
+        inceptionYear = "2025"
+
+        licenses {
+            license {
+                name = "MIT License"
+                url = "https://opensource.org/licenses/MIT"
             }
         }
-        repositories {
-            maven {
-                url "https://jitpack.io"
+
+        developers {
+            developer {
+                id = "entrig"
+                name = "Entrig Team"
+                email = "team@entrig.com"
             }
+        }
+
+        scm {
+            url = "https://github.com/entrig/entrig-android"
+            connection = "scm:git:git://github.com/entrig/entrig-android.git"
+            developerConnection = "scm:git:ssh://git@github.com/entrig/entrig-android.git"
         }
     }
 }
