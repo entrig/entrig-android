@@ -4,38 +4,11 @@ Native Android SDK for Entrig - No-code Push Notifications for Supabase.
 
 ## Installation
 
-### Using Gradle (Local Module)
-
-1. Add the SDK module to your project's `settings.gradle`:
-
-```gradle
-include ':entrig-android'
-project(':entrig-android').projectDir = new File('../entrig-android')
-```
-
-2. Add the dependency to your app's `build.gradle`:
+Add the dependency to your app's `build.gradle`:
 
 ```gradle
 dependencies {
-    implementation project(':entrig-android')
-}
-```
-
-### Using JitPack
-
-Add JitPack repository to your root `build.gradle`:
-
-```gradle
-repositories {
-    maven { url 'https://jitpack.io' }
-}
-```
-
-Add the dependency:
-
-```gradle
-dependencies {
-    implementation 'com.github.entrig:entrig-android:0.0.2-dev'
+    implementation 'com.entrig:entrig-android:0.0.2-dev'
 }
 ```
 
