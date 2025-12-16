@@ -82,7 +82,7 @@ mavenPublishing {
     publishToMavenCentral("CENTRAL_PORTAL")
     signAllPublications()
 
-    coordinates("com.entrig", "entrig-android", "0.0.2-dev")
+    coordinates("com.entrig", "entrig", "0.0.2-dev")
 
     pom {
         name = "Entrig Android SDK"
