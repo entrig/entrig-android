@@ -77,7 +77,7 @@ class LoginActivity : AppCompatActivity() {
                             android.util.Log.d("LoginActivity", "=== ON UI THREAD - ABOUT TO CALL ENTRIG.REGISTER ===")
                             android.util.Log.d("LoginActivity", "Calling Entrig.register() with userId: $userId")
 
-                            com.entrig.sdk.Entrig.register(this@LoginActivity, userId) { success, error ->
+                            com.entrig.sdk.Entrig.register(userId) { success, error ->
                                 android.util.Log.d("LoginActivity", "=== ENTRIG.REGISTER CALLBACK INVOKED ===")
                                 android.util.Log.d("LoginActivity", "Success: $success, Error: $error")
                                 if (success) {
@@ -131,7 +131,7 @@ class LoginActivity : AppCompatActivity() {
                     android.util.Log.d("LoginActivity", "=== ON UI THREAD - ABOUT TO CALL ENTRIG.REGISTER (EXISTING SESSION) ===")
                     android.util.Log.d("LoginActivity", "Calling Entrig.register() with userId: $userId")
 
-                    com.entrig.sdk.Entrig.register(this@LoginActivity, userId) { success, error ->
+                    com.entrig.sdk.Entrig.register(userId) { success, error ->
                         android.util.Log.d("LoginActivity", "=== ENTRIG.REGISTER CALLBACK INVOKED (EXISTING SESSION) ===")
                         android.util.Log.d("LoginActivity", "Success: $success, Error: $error")
                         if (success) {

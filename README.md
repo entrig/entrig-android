@@ -31,7 +31,7 @@ class MyApplication : Application() {
 ### Register User
 
 ```kotlin
-Entrig.register(this, "user-123")
+Entrig.register("user-123")
 ```
 
 <details>
@@ -52,7 +52,7 @@ Then request permission manually before registering:
 ```kotlin
 Entrig.requestPermission(this) { granted ->
     if (granted) {
-        Entrig.register(this, "user-123")
+        Entrig.register("user-123")
     }
 }
 ```

@@ -41,7 +41,7 @@ import kotlinx.coroutines.launch
  * }
  *
  * // Register a user
- * Entrig.register(context, "user-123") { success, error ->
+ * Entrig.register("user-123") { success, error ->
  *     if (success) {
  *         // User registered successfully
  *     }
@@ -168,44 +168,41 @@ object Entrig {
      * On Android 13+, this will automatically request notification permission if
      * handlePermissionAutomatically is enabled in config.
      *
-     * @param context Activity context (required for permission request on Android 13+)
      * @param userId Unique identifier for the user
      * @param listener Optional callback for registration result
      */
     @JvmStatic
     @JvmOverloads
     fun register(
-        context: Context,
         userId: String,
         listener: OnRegistrationListener? = null
     ) {
         Log.d(TAG, "=== REGISTER METHOD CALLED ===")
         Log.d(TAG, "register() invoked with userId: $userId")
-        Log.d(TAG, "Context type: ${context.javaClass.simpleName}")
 
         val cfg = config
-        if (cfg == null) {
+        val appContext = applicationContext
+
+        if (cfg == null || appContext == null) {
             Log.e(TAG, "Registration failed: SDK not initialized")
             listener?.onRegistered(false, "SDK not initialized. Call initialize() first.")
             return
         }
+
         Log.d(TAG, "Config found: apiKey=${cfg.apiKey.take(10)}...")
 
         // Check if already registered with the same userId (idempotency check)
-        val appContext = applicationContext
-        if (appContext != null) {
-            val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val savedUserId = prefs.getString(KEY_USER_ID, null)
-            Log.d(
-                TAG,
-                "Checking existing registration: savedUserId=$savedUserId, newUserId=$userId"
-            )
+        val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val savedUserId = prefs.getString(KEY_USER_ID, null)
+        Log.d(
+            TAG,
+            "Checking existing registration: savedUserId=$savedUserId, newUserId=$userId"
+        )
 
-            if (savedUserId == userId) {
-                Log.d(TAG, "Already registered with userId: $userId, skipping registration")
-                listener?.onRegistered(true, null)
-                return
-            }
+        if (savedUserId == userId) {
+            Log.d(TAG, "Already registered with userId: $userId, skipping registration")
+            listener?.onRegistered(true, null)
+            return
         }
 
         // Check if we need to request permission (Android 13+)
@@ -217,7 +214,7 @@ object Entrig {
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
         ) {
             val permissionStatus = ContextCompat.checkSelfPermission(
-                context,
+                appContext,
                 Manifest.permission.POST_NOTIFICATIONS
             )
             Log.d(
@@ -227,23 +224,24 @@ object Entrig {
 
             if (permissionStatus != PackageManager.PERMISSION_GRANTED) {
                 Log.d(TAG, "Permission not granted, requesting permission")
-                // Store pending registration (no context needed - using stored applicationContext)
+                // Store pending registration
                 pendingUserId = userId
                 pendingRegistrationCallback = listener
 
-                // Request permission
-                if (context is Activity) {
-                    Log.d(TAG, "Requesting POST_NOTIFICATIONS permission from Activity")
+                // Get current activity for permission request
+                val activity = currentActivity?.get()
+                if (activity != null) {
+                    Log.d(TAG, "Requesting POST_NOTIFICATIONS permission from current Activity")
                     ActivityCompat.requestPermissions(
-                        context,
+                        activity,
                         arrayOf(Manifest.permission.POST_NOTIFICATIONS),
                         PERMISSION_REQUEST_CODE
                     )
                 } else {
-                    Log.e(TAG, "Context is not an Activity, cannot request permission")
+                    Log.e(TAG, "No Activity available, cannot request permission")
                     listener?.onRegistered(
                         false,
-                        "Activity context required for permission request on Android 13+"
+                        "Activity required for permission request on Android 13+. Call register() from an active Activity."
                     )
                     // Clear pending state on error
                     pendingUserId = null
@@ -259,12 +257,7 @@ object Entrig {
 
         // Permission already granted or not required, proceed with registration
         Log.d(TAG, "Proceeding with registration")
-        if (appContext != null) {
-            performRegistration(appContext, userId, listener)
-        } else {
-            Log.e(TAG, "Application context is null, cannot register")
-            listener?.onRegistered(false, "SDK not initialized. Call initialize() first.")
-        }
+        performRegistration(appContext, userId, listener)
     }
 
     /**
