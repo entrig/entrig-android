@@ -1,6 +1,19 @@
-# Entrig Android SDK
+# Entrig
 
-Native Android SDK for Entrig - No-code Push Notifications for Supabase.
+**Push Notifications for Supabase**
+
+Send push notifications to your Android app, triggered by database events.
+
+## Prerequisites
+
+1. **Create Entrig Account** - Sign up at [entrig.com](https://entrig.com?ref=pub.dev)
+
+2. **Connect Supabase** - Authorize Entrig to access your Supabase project
+
+
+3. **Upload FCM Service Account** - Upload Service Account JSON and provide your Application ID
+
+---
 
 ## Installation
 
@@ -8,7 +21,7 @@ Add the dependency to your app's `build.gradle`:
 
 ```gradle
 dependencies {
-    implementation 'com.entrig:entrig:0.0.2-dev'
+    implementation 'com.entrig:entrig:0.0.3-dev'
 }
 ```
 
