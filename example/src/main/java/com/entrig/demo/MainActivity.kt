@@ -38,7 +38,7 @@ class MainActivity : AppCompatActivity() {
         Entrig.initialize(
             this,
             EntrigConfig(
-                apiKey = "sk-proj-6cf6aea8-9f49110a909ab0594a29ae2997e6cf3762969b8134d620c0f09b6d0ae6c968b0"
+                apiKey = BuildConfig.ENTRIG_API_KEY
             )
         )
 
@@ -223,7 +223,8 @@ class MainActivity : AppCompatActivity() {
                         startActivity(intent)
                     }
                 }
-            } catch (e: Exception) {
+            }
+            catch (e: Exception) {
                 android.util.Log.e("MainActivity", "Error joining group", e)
                 runOnUiThread {
                     Toast.makeText(this@MainActivity, "Error joining group: ${e.message}", Toast.LENGTH_SHORT).show()

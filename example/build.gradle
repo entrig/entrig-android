@@ -4,6 +4,15 @@ plugins {
     id 'org.jetbrains.kotlin.plugin.serialization' version '2.1.0'
 }
 
+import java.util.Properties
+
+// Load properties from local.properties
+def properties = new Properties()
+def localPropertiesFile = file("local.properties")
+if (localPropertiesFile.exists()) {
+    properties.load(localPropertiesFile.newInputStream())
+}
+
 android {
     namespace "com.entrig.demo"
     compileSdkVersion 36
@@ -13,6 +22,10 @@ android {
         targetSdkVersion 36
         versionCode 1
         versionName "1.0"
+
+        buildConfigField "String", "SUPABASE_URL", properties.getProperty("SUPABASE_URL", "")
+        buildConfigField "String", "SUPABASE_ANON_KEY", properties.getProperty("SUPABASE_ANON_KEY", "")
+        buildConfigField "String", "ENTRIG_API_KEY", properties.getProperty("ENTRIG_API_KEY", "")
     }
     buildTypes {
         release {
@@ -26,6 +39,9 @@ android {
     }
     kotlinOptions {
         jvmTarget = '1.8'
+    }
+    buildFeatures {
+        buildConfig true
     }
 }
 

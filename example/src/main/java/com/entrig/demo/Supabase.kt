@@ -17,8 +17,8 @@ object Supabase {
     fun initialize(context: Context) {
         if (_client == null) {
             _client = createSupabaseClient(
-                supabaseUrl = "https://fsavipscphrohkmddnak.supabase.co",
-                supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzYXZpcHNjcGhyb2hrbWRkbmFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI4NTA3MzMsImV4cCI6MjA3ODQyNjczM30.3G2tCH8DvZ63K-wkXJmPlPzLivj7zj7musK3e-MPRJU"
+                supabaseUrl = BuildConfig.SUPABASE_URL,
+                supabaseKey = BuildConfig.SUPABASE_ANON_KEY
             ) {
                 install(Auth) {
                     flowType = FlowType.PKCE
