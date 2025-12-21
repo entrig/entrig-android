@@ -169,12 +169,14 @@ object Entrig {
      * handlePermissionAutomatically is enabled in config.
      *
      * @param userId Unique identifier for the user
+     * @param activity Optional activity for permission requests (recommended for reliable permission handling)
      * @param listener Optional callback for registration result
      */
     @JvmStatic
     @JvmOverloads
     fun register(
         userId: String,
+        activity: Activity? = null,
         listener: OnRegistrationListener? = null
     ) {
         Log.d(TAG, "=== REGISTER METHOD CALLED ===")
@@ -228,12 +230,12 @@ object Entrig {
                 pendingUserId = userId
                 pendingRegistrationCallback = listener
 
-                // Get current activity for permission request
-                val activity = currentActivity?.get()
-                if (activity != null) {
-                    Log.d(TAG, "Requesting POST_NOTIFICATIONS permission from current Activity")
+                // Get activity for permission request (prefer parameter, fallback to tracked activity)
+                val activityForPermission = activity ?: currentActivity?.get()
+                if (activityForPermission != null) {
+                    Log.d(TAG, "Requesting POST_NOTIFICATIONS permission from Activity")
                     ActivityCompat.requestPermissions(
-                        activity,
+                        activityForPermission,
                         arrayOf(Manifest.permission.POST_NOTIFICATIONS),
                         PERMISSION_REQUEST_CODE
                     )
@@ -241,7 +243,7 @@ object Entrig {
                     Log.e(TAG, "No Activity available, cannot request permission")
                     listener?.onRegistered(
                         false,
-                        "Activity required for permission request on Android 13+. Call register() from an active Activity."
+                        "Activity required for permission request on Android 13+. Pass Activity to register() or call from an active Activity."
                     )
                     // Clear pending state on error
                     pendingUserId = null
