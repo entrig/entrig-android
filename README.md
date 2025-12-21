@@ -21,7 +21,7 @@ Add the dependency to your app's `build.gradle`:
 
 ```gradle
 dependencies {
-    implementation 'com.entrig:entrig:0.0.3-dev'
+    implementation 'com.entrig:entrig:0.0.4-dev'
 }
 ```
 
