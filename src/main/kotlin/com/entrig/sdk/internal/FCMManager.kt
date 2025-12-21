@@ -1,6 +1,7 @@
 package com.entrig.sdk.internal
 
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.util.Log
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.FirebaseApp
@@ -96,13 +97,17 @@ internal class FCMManager {
                     return@withContext Result.success(Unit)
                 }
 
+
+                Log.d(TAG, "is_debug: ${((context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0)}")
+
                 val response = sendPostRequest(
                     url = "$BASE_URL/register",
                     headers = mapOf("Authorization" to "Bearer $key"),
                     body = mapOf(
                         "user_id" to userId,
                         "fcm_token" to token,
-                        "sdk" to "android"
+                        "sdk" to "android",
+                        "is_debug" to ((context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0)
                     )
                 )
 
