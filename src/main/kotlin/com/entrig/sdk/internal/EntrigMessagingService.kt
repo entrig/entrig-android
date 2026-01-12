@@ -26,21 +26,28 @@ class EntrigMessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         Log.d(TAG, "Message received from: ${remoteMessage.from}")
 
-        // Extract data
+        // Extract data from data-only message
         val data = remoteMessage.data
-        val notification = remoteMessage.notification
 
+        // Get title and body directly from data map (data-only message)
+        val title = data["title"] ?: ""
+        val body = data["body"] ?: ""
+
+        // Parse payload JSON for additional data
         val payload = data["payload"]?.let { jsonDecode(it) }?.toMutableMap() ?: mutableMapOf()
         payload.remove("title")
         payload.remove("body")
         val type = payload.remove("type") as? String
 
         val notificationEvent = NotificationEvent(
-            title = notification?.title ?: "",
-            body = notification?.body ?: "",
+            title = title,
+            body = body,
             type = type,
             data = payload
         )
+
+        // Show notification (required for data-only messages)
+        NotificationHelper.showNotification(this, remoteMessage.messageId, notificationEvent, data)
 
         // Notify the SDK about the received notification
         Entrig.notifyNotificationReceived(notificationEvent)

@@ -24,7 +24,7 @@ class LoginActivity : AppCompatActivity() {
         com.entrig.sdk.Entrig.initialize(
             this,
             com.entrig.sdk.models.EntrigConfig(
-                apiKey = "sk-proj-6cf6aea8-9f49110a909ab0594a29ae2997e6cf3762969b8134d620c0f09b6d0ae6c968b0"
+                apiKey = BuildConfig.ENTRIG_API_KEY
             )
         ) { success, error ->
             if (success) {

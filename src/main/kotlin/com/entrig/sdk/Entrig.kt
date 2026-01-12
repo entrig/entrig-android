@@ -67,7 +67,8 @@ object Entrig {
 
     // Application context stored during initialization (safe for singleton - same lifecycle)
     private var applicationContext: Context? = null
-    private var config: EntrigConfig? = null
+    internal var config: EntrigConfig? = null
+        private set
     private var onForegroundNotificationListener: OnForegroundNotificationListener? = null
     private var onNotificationOpenedListener: OnNotificationOpenedListener? = null
     private var cachedInitialNotification: NotificationEvent? = null
