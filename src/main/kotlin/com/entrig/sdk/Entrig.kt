@@ -18,6 +18,7 @@ import com.entrig.sdk.callbacks.OnForegroundNotificationListener
 import com.entrig.sdk.callbacks.OnRegistrationListener
 import com.entrig.sdk.internal.FCMManager
 import com.entrig.sdk.internal.KEY_USER_ID
+import com.entrig.sdk.internal.NotificationHelper
 import com.entrig.sdk.internal.PREFS_NAME
 import com.entrig.sdk.internal.jsonDecode
 import com.entrig.sdk.models.EntrigConfig
@@ -140,6 +141,13 @@ object Entrig {
         val appContext = context.applicationContext
         this.applicationContext = appContext
         this.config = config
+
+        // Create notification channel proactively (before any notification arrives)
+        NotificationHelper.createNotificationChannel(
+            appContext,
+            config.notificationChannelId,
+            config.notificationChannelName
+        )
 
         // Register activity lifecycle callbacks for automatic activity tracking
         if (appContext is Application) {
@@ -465,6 +473,14 @@ object Entrig {
         fcmManager.registerWithToken(context, userId, token)
     }
 
+    /**
+     * Reports delivery status to server.
+     * Called internally when notification is delivered or read.
+     */
+    internal suspend fun reportDeliveryStatus(deliveryId: String, status: String) {
+        fcmManager.reportDeliveryStatus(deliveryId, status)
+    }
+
     private fun performRegistration(
         context: Context,
         userId: String,
@@ -520,15 +536,29 @@ object Entrig {
         val payloadString = extras.getString("payload")
         val payload = payloadString?.let { jsonDecode(it) }?.toMutableMap() ?: mutableMapOf()
 
-        // Extract title, body, and type from data
+        // Extract title, body, type, and delivery_id from data
         val title = payload.remove("title")?.toString() ?: ""
         val body = payload.remove("body")?.toString() ?: ""
         val type = payload.remove("type")?.toString()
+        val deliveryId = payload.remove("delivery_id")?.toString()
+
+        // Report "read" status when notification is opened
+        if (deliveryId != null) {
+            scope.launch(Dispatchers.IO) {
+                try {
+                    reportDeliveryStatus(deliveryId, "read")
+                    Log.d(TAG, "Reported read status for delivery: $deliveryId")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to report read status", e)
+                }
+            }
+        }
 
         return NotificationEvent(
             title = title,
             body = body,
             type = type,
+            deliveryId = deliveryId,
             data = payload
         )
     }

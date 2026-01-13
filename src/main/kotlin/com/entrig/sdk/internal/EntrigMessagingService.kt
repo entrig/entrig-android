@@ -38,16 +38,29 @@ class EntrigMessagingService : FirebaseMessagingService() {
         payload.remove("title")
         payload.remove("body")
         val type = payload.remove("type") as? String
+        val deliveryId = payload.remove("delivery_id") as? String
 
         val notificationEvent = NotificationEvent(
             title = title,
             body = body,
             type = type,
+            deliveryId = deliveryId,
             data = payload
         )
 
         // Show notification (required for data-only messages)
         NotificationHelper.showNotification(this, remoteMessage.messageId, notificationEvent, data)
+
+        // Report "delivered" status to server
+        if (deliveryId != null) {
+            serviceScope.launch {
+                try {
+                    Entrig.reportDeliveryStatus(deliveryId, "delivered")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to report delivered status", e)
+                }
+            }
+        }
 
         // Notify the SDK about the received notification
         Entrig.notifyNotificationReceived(notificationEvent)

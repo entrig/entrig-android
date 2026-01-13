@@ -15,9 +15,32 @@ import com.entrig.sdk.models.NotificationEvent
 internal object NotificationHelper {
 
     private const val TAG = "EntrigNotification"
-    private const val DEFAULT_CHANNEL_ID = "default"
-    private const val DEFAULT_CHANNEL_NAME = "General"
+    internal const val DEFAULT_CHANNEL_ID = "entrig_default"
+    internal const val DEFAULT_CHANNEL_NAME = "General"
     private const val FCM_ICON_META_KEY = "com.google.firebase.messaging.default_notification_icon"
+
+    /**
+     * Creates the notification channel proactively.
+     * Should be called during SDK initialization to ensure channel exists before any notification arrives.
+     */
+    fun createNotificationChannel(context: Context, channelId: String? = null, channelName: String? = null) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val id = channelId ?: DEFAULT_CHANNEL_ID
+            val name = channelName ?: DEFAULT_CHANNEL_NAME
+
+            val channel = NotificationChannel(
+                id,
+                name,
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Push notifications"
+                enableVibration(true)
+            }
+            notificationManager.createNotificationChannel(channel)
+            Log.d(TAG, "Notification channel created: $id ($name)")
+        }
+    }
 
     fun showNotification(
         context: Context,
@@ -81,6 +104,7 @@ internal object NotificationHelper {
     }
 
     private fun getNotificationIcon(context: Context): Int {
+        // 1. Try FCM default notification icon from meta-data
         try {
             val appInfo = context.packageManager.getApplicationInfo(
                 context.packageName,
@@ -96,7 +120,14 @@ internal object NotificationHelper {
         } catch (e: Exception) {
             Log.w(TAG, "Failed to get FCM default icon from meta-data", e)
         }
-        // Fallback to app icon
-        return context.applicationInfo.icon
+
+        // 2. Try app icon
+        val appIcon = context.applicationInfo.icon
+        if (appIcon != 0) {
+            return appIcon
+        }
+
+        // 3. Fallback to Android's default notification icon
+        return android.R.drawable.ic_dialog_info
     }
 }

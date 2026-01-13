@@ -1,3 +1,2 @@
-
+rootProject.name = "entrig"
 include ':example'
-rootProject.name = "entrig-android-sdk"

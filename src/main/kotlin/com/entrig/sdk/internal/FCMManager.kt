@@ -216,4 +216,35 @@ internal class FCMManager {
     }
 
     fun getFirebaseApp(): FirebaseApp? = firebaseApp
+
+    /**
+     * Reports delivery status (delivered/read) to the server.
+     * Called internally by the SDK when notifications are received or opened.
+     */
+    suspend fun reportDeliveryStatus(
+        deliveryId: String,
+        status: String  // "delivered" or "read"
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val key = apiKey ?: return@withContext Result.failure(
+                IllegalStateException("API key not set. Call initialize() first.")
+            )
+
+            val response = sendPostRequest(
+                url = "$BASE_URL/delivery-status",
+                headers = mapOf("Authorization" to "Bearer $key"),
+                body = mapOf(
+                    "delivery_id" to deliveryId,
+                    "status" to status,
+                    "timestamp" to java.time.Instant.now().toString()
+                )
+            )
+
+            Log.d(TAG, "Delivery status report response: $response")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to report delivery status", e)
+            Result.failure(e)
+        }
+    }
 }
