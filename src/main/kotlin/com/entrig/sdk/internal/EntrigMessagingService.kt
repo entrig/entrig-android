@@ -24,8 +24,6 @@ class EntrigMessagingService : FirebaseMessagingService() {
     }
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
-        Log.d(TAG, "Message received from: ${remoteMessage.from}")
-
         // Extract data from data-only message
         val data = remoteMessage.data
 
@@ -48,34 +46,41 @@ class EntrigMessagingService : FirebaseMessagingService() {
             data = payload
         )
 
-        // Show notification (required for data-only messages)
-        NotificationHelper.showNotification(this, remoteMessage.messageId, notificationEvent, data)
+        // Show notification based on foreground state and config
+        val isInForeground = Entrig.isAppInForeground
+        val showForegroundNotification = Entrig.config?.showForegroundNotification ?: true
+
+        if (!isInForeground || showForegroundNotification) {
+            // Show notification if app is in background/terminated OR if foreground notifications are enabled
+            NotificationHelper.showNotification(this, remoteMessage.messageId, notificationEvent, data)
+        }
 
         // Report "delivered" status to server
         if (deliveryId != null) {
             serviceScope.launch {
                 try {
                     Entrig.reportDeliveryStatus(deliveryId, "delivered")
+                    Log.d(TAG, "Delivery status reported: $deliveryId")
                 } catch (e: Exception) {
-                    Log.e(TAG, "Failed to report delivered status", e)
+                    Log.e(TAG, "Failed to report delivery status: $deliveryId", e)
                 }
             }
         }
 
-        // Notify the SDK about the received notification
-        Entrig.notifyNotificationReceived(notificationEvent)
+        // Notify the SDK about the received notification (only when app is in foreground)
+        if (isInForeground) {
+            Entrig.notifyNotificationReceived(notificationEvent)
+        }
     }
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        Log.d(TAG, "New FCM token received: $token")
 
         try {
             val prefs = applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val userId = prefs.getString(KEY_USER_ID, null)
 
             if (userId == null) {
-                Log.w(TAG, "onNewToken: No user ID found, skipping token refresh")
                 return
             }
 
@@ -83,14 +88,13 @@ class EntrigMessagingService : FirebaseMessagingService() {
             serviceScope.launch {
                 try {
                     Entrig.refreshToken(applicationContext, userId, token)
-                    Log.d(TAG, "Token refresh successful")
+                    Log.d(TAG, "FCM token refreshed")
                 } catch (e: Exception) {
-                    Log.e(TAG, "Token refresh failed", e)
+                    Log.e(TAG, "FCM token refresh failed", e)
                 }
             }
         } catch (e: Exception) {
-            // Handle case where service is called before SDK initialization
-            Log.w(TAG, "onNewToken: SDK not initialized yet, will retry after initialization", e)
+            Log.w(TAG, "Token refresh skipped: SDK not initialized")
         }
     }
 

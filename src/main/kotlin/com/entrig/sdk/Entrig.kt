@@ -86,6 +86,12 @@ object Entrig {
     // Suppressed: WeakReference allows GC, and lifecycle callbacks clear the reference
     @android.annotation.SuppressLint("StaticFieldLeak")
     private var currentActivity: WeakReference<Activity>? = null
+
+    /**
+     * Returns true if the app is currently in the foreground (has a resumed activity).
+     */
+    internal val isAppInForeground: Boolean
+        get() = currentActivity?.get() != null
     private val activityLifecycleCallbacks = object : Application.ActivityLifecycleCallbacks {
         override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
             // Automatically handle notification clicks when activity is created
@@ -132,7 +138,6 @@ object Entrig {
     ) {
         // Check if already initialized
         if (this.applicationContext != null) {
-            Log.d(TAG, "SDK already initialized, skipping")
             listener?.onInitialized(true, null)
             return
         }
@@ -159,7 +164,7 @@ object Entrig {
 
             launch(Dispatchers.Main) {
                 if (result.isSuccess) {
-                    Log.d(TAG, "SDK initialized successfully")
+                    Log.d(TAG, "SDK initialized")
                     listener?.onInitialized(true, null)
                 } else {
                     val error = result.exceptionOrNull()?.message ?: "Unknown error"
@@ -188,9 +193,6 @@ object Entrig {
         activity: Activity? = null,
         listener: OnRegistrationListener? = null
     ) {
-        Log.d(TAG, "=== REGISTER METHOD CALLED ===")
-        Log.d(TAG, "register() invoked with userId: $userId")
-
         val cfg = config
         val appContext = applicationContext
 
@@ -200,27 +202,16 @@ object Entrig {
             return
         }
 
-        Log.d(TAG, "Config found: apiKey=${cfg.apiKey.take(10)}...")
-
         // Check if already registered with the same userId (idempotency check)
         val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val savedUserId = prefs.getString(KEY_USER_ID, null)
-        Log.d(
-            TAG,
-            "Checking existing registration: savedUserId=$savedUserId, newUserId=$userId"
-        )
 
         if (savedUserId == userId) {
-            Log.d(TAG, "Already registered with userId: $userId, skipping registration")
             listener?.onRegistered(true, null)
             return
         }
 
         // Check if we need to request permission (Android 13+)
-        Log.d(
-            TAG,
-            "Checking permissions: handlePermission=${cfg.handlePermission}, SDK_INT=${Build.VERSION.SDK_INT}"
-        )
         if (cfg.handlePermission &&
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
         ) {
@@ -228,13 +219,8 @@ object Entrig {
                 appContext,
                 Manifest.permission.POST_NOTIFICATIONS
             )
-            Log.d(
-                TAG,
-                "POST_NOTIFICATIONS permission status: $permissionStatus (GRANTED=${PackageManager.PERMISSION_GRANTED})"
-            )
 
             if (permissionStatus != PackageManager.PERMISSION_GRANTED) {
-                Log.d(TAG, "Permission not granted, requesting permission")
                 // Store pending registration
                 pendingUserId = userId
                 pendingRegistrationCallback = listener
@@ -242,14 +228,13 @@ object Entrig {
                 // Get activity for permission request (prefer parameter, fallback to tracked activity)
                 val activityForPermission = activity ?: currentActivity?.get()
                 if (activityForPermission != null) {
-                    Log.d(TAG, "Requesting POST_NOTIFICATIONS permission from Activity")
                     ActivityCompat.requestPermissions(
                         activityForPermission,
                         arrayOf(Manifest.permission.POST_NOTIFICATIONS),
                         PERMISSION_REQUEST_CODE
                     )
                 } else {
-                    Log.e(TAG, "No Activity available, cannot request permission")
+                    Log.e(TAG, "Registration failed: Activity required for permission on Android 13+")
                     listener?.onRegistered(
                         false,
                         "Activity required for permission request on Android 13+. Pass Activity to register() or call from an active Activity."
@@ -259,15 +244,10 @@ object Entrig {
                     pendingRegistrationCallback = null
                 }
                 return
-            } else {
-                Log.d(TAG, "Permission already granted")
             }
-        } else {
-            Log.d(TAG, "Permission check skipped (either auto-handle disabled or Android < 13)")
         }
 
         // Permission already granted or not required, proceed with registration
-        Log.d(TAG, "Proceeding with registration")
         performRegistration(appContext, userId, listener)
     }
 
@@ -310,25 +290,13 @@ object Entrig {
      */
     @JvmStatic
     fun onRequestPermissionsResult(requestCode: Int, grantResults: IntArray) {
-        Log.d(TAG, "=== ON REQUEST PERMISSIONS RESULT ===")
-        Log.d(TAG, "requestCode: $requestCode, PERMISSION_REQUEST_CODE: $PERMISSION_REQUEST_CODE")
-        Log.d(TAG, "grantResults: ${grantResults.joinToString()}")
-
         if (requestCode == PERMISSION_REQUEST_CODE) {
-            Log.d(TAG, "Request code matches, handling permission result")
-
             // Handle pending registration if exists
             val userId = pendingUserId
             val callback = pendingRegistrationCallback
             val appContext = applicationContext
 
-            Log.d(
-                TAG,
-                "Pending state: userId=$userId, hasCallback=${callback != null}, hasContext=${appContext != null}"
-            )
-
             if (userId != null && appContext != null) {
-                Log.d(TAG, "Proceeding with pending registration")
                 // Always register token regardless of permission result
                 // User can grant permission later and notifications will work
                 performRegistration(appContext, userId, callback)
@@ -336,14 +304,8 @@ object Entrig {
                 // Clear pending state
                 pendingUserId = null
                 pendingRegistrationCallback = null
-                Log.d(TAG, "Cleared pending state")
-            } else {
-                Log.e(TAG, "Cannot complete pending registration: userId or context is null")
             }
-        } else {
-            Log.d(TAG, "Request code does not match, ignoring")
         }
-        Log.d(TAG, "=== ON REQUEST PERMISSIONS RESULT COMPLETED ===")
     }
 
     /**
@@ -365,7 +327,7 @@ object Entrig {
 
             launch(Dispatchers.Main) {
                 if (result.isSuccess) {
-                    Log.d(TAG, "User unregistered successfully")
+                    Log.d(TAG, "User unregistered")
                     listener?.invoke(true, null)
                 } else {
                     val error = result.exceptionOrNull()?.message ?: "Unknown error"
@@ -435,13 +397,11 @@ object Entrig {
 
         // Check if already processed
         if (processedIntents.contains(messageId)) {
-            Log.d(TAG, "Intent already processed: $messageId")
             return
         }
 
         // Mark as processed
         processedIntents.add(messageId)
-        Log.d(TAG, "Processing notification intent: $messageId")
 
         // Limit set size to prevent memory leak
         if (processedIntents.size > 100) {
@@ -486,30 +446,18 @@ object Entrig {
         userId: String,
         listener: OnRegistrationListener?
     ) {
-        Log.d(TAG, "=== PERFORM REGISTRATION CALLED ===")
-        Log.d(TAG, "performRegistration() with userId: $userId")
-
         scope.launch(Dispatchers.IO) {
-            Log.d(TAG, "Running registration on IO dispatcher")
             val result = fcmManager.register(context, userId)
-            Log.d(
-                TAG,
-                "FCMManager.register() returned: success=${result.isSuccess}, error=${result.exceptionOrNull()?.message}"
-            )
 
             launch(Dispatchers.Main) {
-                Log.d(TAG, "Switching to Main dispatcher for callback")
                 if (result.isSuccess) {
-                    Log.d(TAG, "✓ User registered successfully - invoking callback")
+                    Log.d(TAG, "User registered: $userId")
                     listener?.onRegistered(true, null)
-                    Log.d(TAG, "Callback invoked with success=true")
                 } else {
                     val error = result.exceptionOrNull()?.message ?: "Unknown error"
-                    Log.e(TAG, "✗ Registration failed: $error - invoking callback")
+                    Log.e(TAG, "Registration failed: $error")
                     listener?.onRegistered(false, error)
-                    Log.d(TAG, "Callback invoked with success=false, error=$error")
                 }
-                Log.d(TAG, "=== PERFORM REGISTRATION COMPLETED ===")
             }
         }
     }
@@ -520,17 +468,13 @@ object Entrig {
         // Check if this is a FCM notification by looking for message ID
         val messageId = extras.getString("google.message_id") ?: extras.getString("message_id")
         if (messageId == null) {
-            Log.d(TAG, "Not a FCM notification intent, skipping")
             return null
         }
 
         // Check for FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY
         if ((intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0) {
-            Log.d(TAG, "Intent launched from history, skipping")
             return null
         }
-
-        Log.d(TAG, "Extracting notification data from intent")
 
         // Extract and decode the payload JSON string
         val payloadString = extras.getString("payload")
@@ -547,9 +491,9 @@ object Entrig {
             scope.launch(Dispatchers.IO) {
                 try {
                     reportDeliveryStatus(deliveryId, "read")
-                    Log.d(TAG, "Reported read status for delivery: $deliveryId")
+                    Log.d(TAG, "Read status reported: $deliveryId")
                 } catch (e: Exception) {
-                    Log.e(TAG, "Failed to report read status", e)
+                    Log.e(TAG, "Failed to report read status: $deliveryId", e)
                 }
             }
         }

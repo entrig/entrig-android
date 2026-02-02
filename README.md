@@ -17,6 +17,9 @@ Send push notifications to your Android app, triggered by database events.
 
 ## Installation
 
+**Minimum Requirements:**
+- Android 8.0 (API 26) or higher
+
 Add the dependency to your app's `build.gradle`:
 
 ```gradle

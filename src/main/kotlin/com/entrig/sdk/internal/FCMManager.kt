@@ -56,7 +56,6 @@ internal class FCMManager {
                 FirebaseApp.initializeApp(context, firebaseOptions, FIREBASE_APP_NAME)
             }
 
-            Log.d(TAG, "Firebase initialization successful")
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Firebase initialization failed", e)
@@ -93,12 +92,8 @@ internal class FCMManager {
                 val savedToken = prefs.getString(KEY_FCM_TOKEN, null)
 
                 if (savedUserId == userId && savedToken == token) {
-                    Log.d(TAG, "Already registered with same userId and token, skipping registration")
                     return@withContext Result.success(Unit)
                 }
-
-
-                Log.d(TAG, "is_debug: ${((context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0)}")
 
                 val response = sendPostRequest(
                     url = "$BASE_URL/register",
@@ -111,8 +106,6 @@ internal class FCMManager {
                     )
                 )
 
-                Log.d(TAG, "Token registration response: $response")
-
                 // Save registration ID, user ID, and token to SharedPreferences
                 val responseData = jsonDecode(response)
                 val registrationId = responseData["id"]?.toString()
@@ -123,7 +116,6 @@ internal class FCMManager {
                         .putString(KEY_USER_ID, userId)
                         .putString(KEY_FCM_TOKEN, token)
                         .apply()
-                    Log.d(TAG, "Saved registration ID: $registrationId")
                 }
 
                 Result.success(Unit)
@@ -151,13 +143,11 @@ internal class FCMManager {
             val fcmInstance = app.get(FirebaseMessaging::class.java)
             Tasks.await(fcmInstance.deleteToken())
 
-            val response = sendPostRequest(
+            sendPostRequest(
                 url = "$BASE_URL/unregister",
                 headers = mapOf("Authorization" to "Bearer $key"),
                 body = mapOf("id" to registrationId)
             )
-
-            Log.d(TAG, "FCM Unregister response: $response")
 
             // Clear the registration ID, user ID, and token after successful un-registration
             prefs.edit()
@@ -168,7 +158,7 @@ internal class FCMManager {
 
             Result.success(Unit)
         } catch (e: Exception) {
-            Log.e(TAG, "FCM Unregister failed", e)
+            Log.e(TAG, "Unregister failed", e)
             Result.failure(e)
         }
     }
@@ -230,7 +220,7 @@ internal class FCMManager {
                 IllegalStateException("API key not set. Call initialize() first.")
             )
 
-            val response = sendPostRequest(
+            sendPostRequest(
                 url = "$BASE_URL/delivery-status",
                 headers = mapOf("Authorization" to "Bearer $key"),
                 body = mapOf(
@@ -240,10 +230,9 @@ internal class FCMManager {
                 )
             )
 
-            Log.d(TAG, "Delivery status report response: $response")
             Result.success(Unit)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to report delivery status", e)
+            Log.e(TAG, "Failed to report delivery status: $deliveryId", e)
             Result.failure(e)
         }
     }

@@ -56,7 +56,7 @@ dependencies {
     implementation 'androidx.core:core-ktx:1.9.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'com.google.android.material:material:1.9.0'
-    implementation 'com.entrig:entrig:0.0.4-dev'
+    implementation 'com.entrig:entrig:0.0.7-dev'
     // implementation project(':') // local
 
     implementation platform('io.github.jan-tennert.supabase:bom:3.2.2')
