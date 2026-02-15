@@ -61,4 +61,5 @@ dependency-reduced-pom.xml
 buildNumber.properties
 .mvn/timing.properties
 
-PUBLISH.md
+.ref/
+compat-test/

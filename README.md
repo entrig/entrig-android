@@ -24,7 +24,7 @@ Add the dependency to your app's `build.gradle`:
 
 ```gradle
 dependencies {
-    implementation 'com.entrig:entrig:0.0.4-dev'
+    implementation 'com.entrig:entrig:0.0.9-dev'
 }
 ```
 
@@ -47,13 +47,34 @@ class MyApplication : Application() {
 ### Register User
 
 ```kotlin
-Entrig.register("user-123")
+Entrig.register("user-123") { success, error ->
+    if (success) {
+        // User registered for notifications
+    }
+}
 ```
+
+#### Permission Callback (required for Android 13+)
+
+On Android 13+, the SDK requests `POST_NOTIFICATIONS` permission automatically during `register()`. You must forward the permission result from your Activity:
+
+```kotlin
+override fun onRequestPermissionsResult(
+    requestCode: Int,
+    permissions: Array<out String>,
+    grantResults: IntArray
+) {
+    super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    Entrig.onRequestPermissionsResult(requestCode, grantResults)
+}
+```
+
+> **Why is this needed?** Android delivers permission results to the Activity's `onRequestPermissionsResult`, not to libraries. There is no way for the SDK to intercept this without the Activity forwarding it. We evaluated using `ActivityResultRegistry` to avoid this, but it introduces lifecycle complexity that is unreliable in a singleton SDK.
 
 <details>
 <summary>Manual permission handling (click to expand)</summary>
 
-By default, the SDK handles permissions automatically. To disable:
+To handle permissions yourself, disable automatic handling:
 
 ```kotlin
 val config = EntrigConfig(
@@ -73,18 +94,7 @@ Entrig.requestPermission(this) { granted ->
 }
 ```
 
-Add this to your Activity:
-
-```kotlin
-override fun onRequestPermissionsResult(
-    requestCode: Int,
-    permissions: Array<out String>,
-    grantResults: IntArray
-) {
-    super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-    Entrig.onRequestPermissionsResult(requestCode, grantResults)
-}
-```
+The `onRequestPermissionsResult` forwarding is still required.
 
 </details>
 

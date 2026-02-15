@@ -1,5 +1,5 @@
 buildscript {
-    ext.kotlin_version = "2.1.0"
+    ext.kotlin_version = "2.2.0"
     repositories {
         google()
         mavenCentral()
@@ -28,7 +28,7 @@ apply plugin: "kotlin-android"
 apply plugin: "com.vanniktech.maven.publish"
 
 group = "com.entrig"
-version = "0.0.7-dev"
+version = "0.0.9-dev"
 
 android {
     namespace = "com.entrig.sdk"
@@ -50,7 +50,7 @@ android {
     }
 
     defaultConfig {
-        minSdk = 21
+        minSdk = 24
         targetSdk = 35
     }
 
@@ -82,7 +82,7 @@ mavenPublishing {
     publishToMavenCentral("CENTRAL_PORTAL")
     signAllPublications()
 
-    coordinates("com.entrig", "entrig", "0.0.5-dev")
+    coordinates("com.entrig", "entrig", "0.0.9-dev")
 
     pom {
         name = "Entrig Android SDK"

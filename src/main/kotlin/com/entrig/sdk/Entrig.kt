@@ -77,6 +77,7 @@ object Entrig {
 
     // Permission handling state (no Context stored here)
     private var pendingUserId: String? = null
+    private var pendingSdk: String? = null
     private var pendingRegistrationCallback: OnRegistrationListener? = null
 
     // Track processed intents to avoid duplicate handling
@@ -191,6 +192,7 @@ object Entrig {
     fun register(
         userId: String,
         activity: Activity? = null,
+        sdk: String = "android",
         listener: OnRegistrationListener? = null
     ) {
         val cfg = config
@@ -223,6 +225,7 @@ object Entrig {
             if (permissionStatus != PackageManager.PERMISSION_GRANTED) {
                 // Store pending registration
                 pendingUserId = userId
+                pendingSdk = sdk
                 pendingRegistrationCallback = listener
 
                 // Get activity for permission request (prefer parameter, fallback to tracked activity)
@@ -241,6 +244,7 @@ object Entrig {
                     )
                     // Clear pending state on error
                     pendingUserId = null
+                    pendingSdk = null
                     pendingRegistrationCallback = null
                 }
                 return
@@ -248,7 +252,7 @@ object Entrig {
         }
 
         // Permission already granted or not required, proceed with registration
-        performRegistration(appContext, userId, listener)
+        performRegistration(appContext, userId, sdk, listener)
     }
 
     /**
@@ -293,16 +297,18 @@ object Entrig {
         if (requestCode == PERMISSION_REQUEST_CODE) {
             // Handle pending registration if exists
             val userId = pendingUserId
+            val sdk = pendingSdk ?: "android"
             val callback = pendingRegistrationCallback
             val appContext = applicationContext
 
             if (userId != null && appContext != null) {
                 // Always register token regardless of permission result
                 // User can grant permission later and notifications will work
-                performRegistration(appContext, userId, callback)
+                performRegistration(appContext, userId, sdk, callback)
 
                 // Clear pending state
                 pendingUserId = null
+                pendingSdk = null
                 pendingRegistrationCallback = null
             }
         }
@@ -444,10 +450,11 @@ object Entrig {
     private fun performRegistration(
         context: Context,
         userId: String,
+        sdk: String = "android",
         listener: OnRegistrationListener?
     ) {
         scope.launch(Dispatchers.IO) {
-            val result = fcmManager.register(context, userId)
+            val result = fcmManager.register(context, userId, sdk)
 
             launch(Dispatchers.Main) {
                 if (result.isSuccess) {

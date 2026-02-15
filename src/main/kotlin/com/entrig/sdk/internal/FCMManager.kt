@@ -63,7 +63,7 @@ internal class FCMManager {
         }
     }
 
-    suspend fun register(context: Context, userId: String): Result<Unit> = withContext(Dispatchers.IO) {
+    suspend fun register(context: Context, userId: String, sdk: String = "android"): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             val app = firebaseApp ?: return@withContext Result.failure(
                 IllegalStateException("Firebase not initialized. Call initialize() first.")
@@ -72,22 +72,26 @@ internal class FCMManager {
             val fcmInstance = app.get(FirebaseMessaging::class.java)
             val token = Tasks.await(fcmInstance.token)
 
-            registerWithToken(context, userId, token)
+            registerWithToken(context, userId, token, sdk)
         } catch (e: Exception) {
             Log.e(TAG, "Token registration failed", e)
             Result.failure(e)
         }
     }
 
-    suspend fun registerWithToken(context: Context, userId: String, token: String): Result<Unit> =
+    suspend fun registerWithToken(context: Context, userId: String, token: String, sdk: String? = null): Result<Unit> =
         withContext(Dispatchers.IO) {
             try {
                 val key = apiKey ?: return@withContext Result.failure(
                     IllegalStateException("API key not set. Call initialize() first.")
                 )
 
-                // Check if already registered with same userId and token
                 val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
+                // Resolve sdk: use parameter, fall back to saved value, default to "android"
+                val resolvedSdk = sdk ?: prefs.getString(KEY_SDK, "android") ?: "android"
+
+                // Check if already registered with same userId and token
                 val savedUserId = prefs.getString(KEY_USER_ID, null)
                 val savedToken = prefs.getString(KEY_FCM_TOKEN, null)
 
@@ -101,12 +105,12 @@ internal class FCMManager {
                     body = mapOf(
                         "user_id" to userId,
                         "fcm_token" to token,
-                        "sdk" to "android",
+                        "sdk" to resolvedSdk,
                         "is_debug" to ((context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0)
                     )
                 )
 
-                // Save registration ID, user ID, and token to SharedPreferences
+                // Save registration ID, user ID, token, and sdk to SharedPreferences
                 val responseData = jsonDecode(response)
                 val registrationId = responseData["id"]?.toString()
 
@@ -115,6 +119,7 @@ internal class FCMManager {
                         .putString(KEY_REGISTRATION_ID, registrationId)
                         .putString(KEY_USER_ID, userId)
                         .putString(KEY_FCM_TOKEN, token)
+                        .putString(KEY_SDK, resolvedSdk)
                         .apply()
                 }
 
@@ -149,11 +154,12 @@ internal class FCMManager {
                 body = mapOf("id" to registrationId)
             )
 
-            // Clear the registration ID, user ID, and token after successful un-registration
+            // Clear the registration ID, user ID, token, and sdk after successful un-registration
             prefs.edit()
                 .remove(KEY_REGISTRATION_ID)
                 .remove(KEY_USER_ID)
                 .remove(KEY_FCM_TOKEN)
+                .remove(KEY_SDK)
                 .apply()
 
             Result.success(Unit)

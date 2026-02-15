@@ -6,6 +6,7 @@ internal const val PREFS_NAME = "com.entrig.sdk.prefs"
 internal const val KEY_REGISTRATION_ID = "entrig_registration_id"
 internal const val KEY_USER_ID = "entrig_user_id"
 internal const val KEY_FCM_TOKEN = "entrig_fcm_token"
+internal const val KEY_SDK = "entrig_sdk"
 
 internal fun jsonDecode(value: String): MutableMap<String, Any?> {
     val jsonObject = JSONObject(value)
