@@ -28,7 +28,7 @@ apply plugin: "kotlin-android"
 apply plugin: "com.vanniktech.maven.publish"
 
 group = "com.entrig"
-version = "0.0.9-dev"
+version = "0.0.10-dev"
 
 android {
     namespace = "com.entrig.sdk"
@@ -82,7 +82,7 @@ mavenPublishing {
     publishToMavenCentral("CENTRAL_PORTAL")
     signAllPublications()
 
-    coordinates("com.entrig", "entrig", "0.0.9-dev")
+    coordinates("com.entrig", "entrig", "0.0.10-dev")
 
     pom {
         name = "Entrig Android SDK"

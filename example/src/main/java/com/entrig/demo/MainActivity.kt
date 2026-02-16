@@ -38,7 +38,8 @@ class MainActivity : AppCompatActivity() {
         Entrig.initialize(
             this,
             EntrigConfig(
-                apiKey = BuildConfig.ENTRIG_API_KEY
+                apiKey = BuildConfig.ENTRIG_API_KEY,
+                showForegroundNotification = false
             )
         )
 

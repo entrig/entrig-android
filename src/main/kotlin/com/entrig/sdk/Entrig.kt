@@ -139,6 +139,8 @@ object Entrig {
     ) {
         // Check if already initialized
         if (this.applicationContext != null) {
+            // Always update config so callers can change settings (e.g., showForegroundNotification)
+            this.config = config
             listener?.onInitialized(true, null)
             return
         }
@@ -379,6 +381,20 @@ object Entrig {
             return notification
         }
         return null
+    }
+
+    /**
+     * Sets the current activity for foreground detection.
+     *
+     * Call this from framework plugins (Flutter, Expo, Capacitor) when the activity
+     * is already resumed before SDK initialization, since ActivityLifecycleCallbacks
+     * won't fire retroactively for already-resumed activities.
+     *
+     * @param activity The current activity, or null to clear
+     */
+    @JvmStatic
+    fun setActivity(activity: Activity?) {
+        currentActivity = activity?.let { WeakReference(it) }
     }
 
     /**
