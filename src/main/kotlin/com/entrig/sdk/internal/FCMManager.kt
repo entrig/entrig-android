@@ -198,14 +198,22 @@ internal class FCMManager {
                 }
             }
 
-            val responseText = try {
+            val responseCode = connection.responseCode
+            if (responseCode in 200..299) {
                 connection.inputStream.bufferedReader().use { it.readText() }
-            } catch (e: Exception) {
-                connection.errorStream?.bufferedReader()?.use { it.readText() }
-                    ?: throw e
+            } else {
+                val errorBody = connection.errorStream?.bufferedReader()?.use { it.readText() } ?: ""
+                val message = when (responseCode) {
+                    401 -> "Invalid API key. Check your EntrigConfig apiKey."
+                    403 -> "Access denied. Verify your API key has the required permissions."
+                    404 -> "Entrig endpoint not found. Ensure you're using a compatible SDK version."
+                    422 -> "Invalid request data: $errorBody"
+                    429 -> "Rate limit exceeded. Please retry after a short delay."
+                    in 500..599 -> "Entrig server error ($responseCode). Please try again later."
+                    else -> "Request failed ($responseCode): $errorBody"
+                }
+                throw Exception(message)
             }
-
-            responseText
         } finally {
             connection.disconnect()
         }
