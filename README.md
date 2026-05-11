@@ -112,6 +112,44 @@ Entrig.setOnNotificationOpenedListener { notification ->
 }
 ```
 
+### Payload Data Shape
+
+`notification.data` only includes the fields you selected while configuring the notification in Entrig.
+
+- If you select a regular column, you receive its direct value.
+- If you select a foreign key column without selecting any fields from the related table, you receive the foreign key value directly.
+- If you select fields from the related table for that foreign key, you receive an object under the same foreign key field name.
+
+Example payloads:
+
+```json
+{
+  "message": "Hello",
+  "user_id": "6d4d6d9d-7f7e-4f0b-9f26-123456789abc"
+}
+```
+
+```json
+{
+  "message": "Hello",
+  "user_id": {
+    "name": "John"
+  }
+}
+```
+
+Access in Kotlin:
+
+```kotlin
+val data = notification.data
+
+val message = data["message"] as? String
+val userIdValue = data["user_id"] as? String
+
+val userObject = data["user_id"] as? Map<*, *>
+val userName = userObject?.get("name") as? String
+```
+
 ### Unregister User
 
 ```kotlin

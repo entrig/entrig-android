@@ -28,12 +28,17 @@ apply plugin: "kotlin-android"
 apply plugin: "com.vanniktech.maven.publish"
 
 group = "com.entrig"
-version = "1.0.0"
+version = "1.0.1"
+def sdkVersionName = version.toString()
 
 android {
     namespace = "com.entrig.sdk"
 
     compileSdk = 35
+
+    buildFeatures {
+        buildConfig = true
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -52,6 +57,7 @@ android {
     defaultConfig {
         minSdk = 24
         targetSdk = 35
+        buildConfigField "String", "SDK_VERSION", "\"${sdkVersionName}\""
     }
 
     dependencies {

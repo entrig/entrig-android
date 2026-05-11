@@ -17,9 +17,7 @@ import com.entrig.sdk.callbacks.OnNotificationOpenedListener
 import com.entrig.sdk.callbacks.OnForegroundNotificationListener
 import com.entrig.sdk.callbacks.OnRegistrationListener
 import com.entrig.sdk.internal.FCMManager
-import com.entrig.sdk.internal.KEY_USER_ID
 import com.entrig.sdk.internal.NotificationHelper
-import com.entrig.sdk.internal.PREFS_NAME
 import com.entrig.sdk.internal.jsonDecode
 import com.entrig.sdk.models.EntrigConfig
 import com.entrig.sdk.models.NotificationEvent
@@ -78,6 +76,7 @@ object Entrig {
     // Permission handling state (no Context stored here)
     private var pendingUserId: String? = null
     private var pendingSdk: String? = null
+    private var pendingSdkVersion: String? = null
     private var pendingRegistrationCallback: OnRegistrationListener? = null
 
     // Track processed intents to avoid duplicate handling
@@ -187,6 +186,8 @@ object Entrig {
      *
      * @param userId Unique identifier for the user
      * @param activity Optional activity for permission requests (recommended for reliable permission handling)
+     * @param sdk SDK identifier (for example "android", "flutter", "react-native")
+     * @param sdkVersion Optional SDK package version override. Defaults to the Android SDK version.
      * @param listener Optional callback for registration result
      */
     @JvmStatic
@@ -195,6 +196,7 @@ object Entrig {
         userId: String,
         activity: Activity? = null,
         sdk: String = "android",
+        sdkVersion: String? = null,
         listener: OnRegistrationListener? = null
     ) {
         val cfg = config
@@ -203,15 +205,6 @@ object Entrig {
         if (cfg == null || appContext == null) {
             Log.e(TAG, "Registration failed: SDK not initialized")
             listener?.onRegistered(false, "SDK not initialized. Call initialize() first.")
-            return
-        }
-
-        // Check if already registered with the same userId (idempotency check)
-        val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val savedUserId = prefs.getString(KEY_USER_ID, null)
-
-        if (savedUserId == userId) {
-            listener?.onRegistered(true, null)
             return
         }
 
@@ -228,6 +221,7 @@ object Entrig {
                 // Store pending registration
                 pendingUserId = userId
                 pendingSdk = sdk
+                pendingSdkVersion = sdkVersion
                 pendingRegistrationCallback = listener
 
                 // Get activity for permission request (prefer parameter, fallback to tracked activity)
@@ -247,6 +241,7 @@ object Entrig {
                     // Clear pending state on error
                     pendingUserId = null
                     pendingSdk = null
+                    pendingSdkVersion = null
                     pendingRegistrationCallback = null
                 }
                 return
@@ -254,7 +249,7 @@ object Entrig {
         }
 
         // Permission already granted or not required, proceed with registration
-        performRegistration(appContext, userId, sdk, listener)
+        performRegistration(appContext, userId, sdk, sdkVersion, listener)
     }
 
     /**
@@ -300,17 +295,19 @@ object Entrig {
             // Handle pending registration if exists
             val userId = pendingUserId
             val sdk = pendingSdk ?: "android"
+            val sdkVersion = pendingSdkVersion
             val callback = pendingRegistrationCallback
             val appContext = applicationContext
 
             if (userId != null && appContext != null) {
                 // Always register token regardless of permission result
                 // User can grant permission later and notifications will work
-                performRegistration(appContext, userId, sdk, callback)
+                performRegistration(appContext, userId, sdk, sdkVersion, callback)
 
                 // Clear pending state
                 pendingUserId = null
                 pendingSdk = null
+                pendingSdkVersion = null
                 pendingRegistrationCallback = null
             }
         }
@@ -467,10 +464,11 @@ object Entrig {
         context: Context,
         userId: String,
         sdk: String = "android",
+        sdkVersion: String? = null,
         listener: OnRegistrationListener?
     ) {
         scope.launch(Dispatchers.IO) {
-            val result = fcmManager.register(context, userId, sdk)
+            val result = fcmManager.register(context, userId, sdk, sdkVersion)
 
             launch(Dispatchers.Main) {
                 if (result.isSuccess) {
