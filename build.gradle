@@ -28,7 +28,7 @@ apply plugin: "kotlin-android"
 apply plugin: "com.vanniktech.maven.publish"
 
 group = "com.entrig"
-version = "1.0.1"
+version = "1.0.2"
 def sdkVersionName = version.toString()
 
 android {
@@ -88,7 +88,7 @@ mavenPublishing {
     publishToMavenCentral("CENTRAL_PORTAL")
     signAllPublications()
 
-    coordinates("com.entrig", "entrig", "1.0.0")
+    coordinates("com.entrig", "entrig", "1.0.2")
 
     pom {
         name = "Entrig Android SDK"
