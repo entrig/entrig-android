@@ -36,12 +36,14 @@ class EntrigMessagingService : FirebaseMessagingService() {
         payload.remove("title")
         payload.remove("body")
         val type = payload.remove("type") as? String
+        val deeplink = payload.remove("deeplink") as? String
         val deliveryId = payload.remove("delivery_id") as? String
 
         val notificationEvent = NotificationEvent(
             title = title,
             body = body,
             type = type,
+            deeplink = deeplink,
             deliveryId = deliveryId,
             data = payload
         )

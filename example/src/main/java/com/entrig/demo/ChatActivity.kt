@@ -1,5 +1,6 @@
 package com.entrig.demo
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
@@ -54,11 +55,7 @@ class ChatActivity : AppCompatActivity() {
             stackFromEnd = true
         }
 
-        groupId = intent.getStringExtra("group_id")
-        groupName = intent.getStringExtra("group_name")
-
-        supportActionBar?.title = groupName
-
+        resolveIntent(intent)
         loadMessages()
 
         sendButton.setOnClickListener {
@@ -69,9 +66,45 @@ class ChatActivity : AppCompatActivity() {
         }
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        resolveIntent(intent)
+        loadMessages()
+    }
+
     override fun onSupportNavigateUp(): Boolean {
         finish()
         return true
+    }
+
+    // Parses group_id from either a deeplink URI (entrigdemo://chat/{group_id})
+    // or the explicit extras set by the existing in-app navigation path.
+    private fun resolveIntent(intent: Intent) {
+        if (intent.action == Intent.ACTION_VIEW) {
+            val uri = intent.data
+            groupId = uri?.lastPathSegment
+            groupName = null
+            supportActionBar?.title = "Chat"
+            if (groupId != null) loadGroupName(groupId!!)
+        } else {
+            groupId = intent.getStringExtra("group_id")
+            groupName = intent.getStringExtra("group_name")
+            supportActionBar?.title = groupName
+        }
+    }
+
+    private fun loadGroupName(id: String) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val group = SupabaseTable.groups
+                    .select { filter { eq("id", id) } }
+                    .decodeSingle<Group>()
+                runOnUiThread { supportActionBar?.title = group.name }
+            } catch (e: Exception) {
+                android.util.Log.e("ChatActivity", "Error loading group name", e)
+            }
+        }
     }
 
     private fun loadMessages() {

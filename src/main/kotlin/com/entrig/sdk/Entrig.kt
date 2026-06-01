@@ -501,10 +501,11 @@ object Entrig {
         val payloadString = extras.getString("payload")
         val payload = payloadString?.let { jsonDecode(it) }?.toMutableMap() ?: mutableMapOf()
 
-        // Extract title, body, type, and delivery_id from data
+        // Extract title, body, type, deeplink, and delivery_id from data
         val title = payload.remove("title")?.toString() ?: ""
         val body = payload.remove("body")?.toString() ?: ""
         val type = payload.remove("type")?.toString()
+        val deeplink = payload.remove("deeplink")?.toString()
         val deliveryId = payload.remove("delivery_id")?.toString()
 
         // Report "read" status when notification is opened
@@ -523,6 +524,7 @@ object Entrig {
             title = title,
             body = body,
             type = type,
+            deeplink = deeplink,
             deliveryId = deliveryId,
             data = payload
         )

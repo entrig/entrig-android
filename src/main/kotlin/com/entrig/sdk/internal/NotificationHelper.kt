@@ -6,7 +6,9 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.entrig.sdk.Entrig
 import com.entrig.sdk.models.NotificationEvent
@@ -65,12 +67,34 @@ internal object NotificationHelper {
             }
         }
 
-        // Create intent for notification tap
-        val launchIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)?.apply {
+        // Create intent for notification tap.
+        // When autoOpenDeeplink is enabled and the notification carries a deeplink, fire an
+        // ACTION_VIEW intent so packages like app_links receive it and auto-navigate. Notification
+        // extras are still attached so the SDK's onNotificationOpened callback keeps working.
+        val deeplink = notification.deeplink
+        // Capture before apply{} scope where Intent.data would shadow this name
+        val msgData = data
+        val deeplinkUri = if (deeplink != null && config?.autoOpenDeeplink == true)
+            Uri.parse(deeplink).takeIf { it.scheme?.isNotEmpty() == true }
+        else null
+        val baseIntent = if (deeplinkUri != null) {
+            val intent = Intent(Intent.ACTION_VIEW, deeplinkUri).apply {
+                setPackage(context.packageName)
+            }
+            // Fall back to launcher intent if the URI scheme isn't registered in this app
+            @Suppress("DEPRECATION")
+            if (intent.resolveActivity(context.packageManager) != null) intent
+            else {
+                Log.w("EntrigSDK", "autoOpenDeeplink: scheme not registered, falling back to launcher: $deeplink")
+                context.packageManager.getLaunchIntentForPackage(context.packageName)
+            }
+        } else {
+            context.packageManager.getLaunchIntentForPackage(context.packageName)
+        }
+        val launchIntent = baseIntent?.apply {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-            // Pass data for handling notification opened
             putExtra("google.message_id", messageId)
-            data.forEach { (key, value) -> putExtra(key, value) }
+            msgData.forEach { (key, value) -> putExtra(key, value) }
         }
 
         val pendingIntent = launchIntent?.let {

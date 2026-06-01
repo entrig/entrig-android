@@ -39,7 +39,8 @@ class MainActivity : AppCompatActivity() {
             this,
             EntrigConfig(
                 apiKey = BuildConfig.ENTRIG_API_KEY,
-                showForegroundNotification = false
+                showForegroundNotification = false,
+                autoOpenDeeplink = true
             )
         )
 
@@ -61,21 +62,7 @@ class MainActivity : AppCompatActivity() {
 
         loadUserAndGroups()
 
-        // Setup notification listeners
-        Entrig.setOnForegroundNotificationListener { notification ->
-            Toast.makeText(this, "Notification received: ${notification.title}", Toast.LENGTH_SHORT).show()
-        }
 
-        Entrig.setOnNotificationOpenedListener { notification ->
-            // Handle notification tap - navigate based on type
-            notification.data?.get("group_id")?.toString()?.let { groupId ->
-                val groupName = notification.data?.get("group_name")?.toString() ?: "Group"
-                val intent = Intent(this, ChatActivity::class.java)
-                intent.putExtra("group_id", groupId)
-                intent.putExtra("group_name", groupName)
-                startActivity(intent)
-            }
-        }
     }
 
     private fun loadUserAndGroups() {
@@ -187,6 +174,7 @@ class MainActivity : AppCompatActivity() {
     private fun handleGroupClick(group: Group, isJoined: Boolean) {
         if (isJoined) {
             // Already joined, navigate to chat
+            android.util.Log.d("Entrig", "Deeplink: groupchat://chat/${group.id}")
             val intent = Intent(this, ChatActivity::class.java)
             intent.putExtra("group_id", group.id)
             intent.putExtra("group_name", group.name)

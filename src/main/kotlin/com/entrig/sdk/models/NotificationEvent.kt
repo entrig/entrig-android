@@ -15,6 +15,7 @@ data class NotificationEvent(
     val title: String?,
     val body: String?,
     val type: String?,
+    val deeplink: String?,
     val deliveryId: String?,
     val data: Map<String, Any?>?
 ) {
@@ -26,6 +27,7 @@ data class NotificationEvent(
             "title" to title,
             "body" to body,
             "type" to type,
+            "deeplink" to deeplink,
             "deliveryId" to deliveryId,
             "data" to data
         )
@@ -42,6 +44,7 @@ data class NotificationEvent(
             val data = mutableMapOf<String, Any?>()
             val dataObject = json.optJSONObject("data")
             var type: String? = null
+            var deeplink: String? = null
             var deliveryId: String? = null
 
             if (dataObject != null) {
@@ -50,13 +53,14 @@ data class NotificationEvent(
                     val key = keys.next()
                     when (key) {
                         "type" -> type = dataObject.optString(key)
+                        "deeplink" -> deeplink = dataObject.optString(key)
                         "delivery_id" -> deliveryId = dataObject.optString(key)
                         else -> data[key] = dataObject.get(key)
                     }
                 }
             }
 
-            return NotificationEvent(title, body, type, deliveryId, data)
+            return NotificationEvent(title, body, type, deeplink, deliveryId, data)
         }
     }
 }
