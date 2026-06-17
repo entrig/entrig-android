@@ -138,15 +138,17 @@ internal class FCMManager {
                 val responseData = jsonDecode(response)
                 val registrationId = responseData["id"]?.toString()
 
-                if (registrationId != null) {
-                    prefs.edit()
-                        .putString(KEY_REGISTRATION_ID, registrationId)
-                        .putString(KEY_USER_ID, userId)
-                        .putString(KEY_FCM_TOKEN, token)
-                        .putString(KEY_SDK, resolvedSdk)
-                        .putString(KEY_SDK_VERSION, resolvedSdkVersion)
-                        .apply()
+                if (registrationId == null) {
+                    return@withContext Result.failure(Exception("Registration failed: no ID returned from server"))
                 }
+
+                prefs.edit()
+                    .putString(KEY_REGISTRATION_ID, registrationId)
+                    .putString(KEY_USER_ID, userId)
+                    .putString(KEY_FCM_TOKEN, token)
+                    .putString(KEY_SDK, resolvedSdk)
+                    .putString(KEY_SDK_VERSION, resolvedSdkVersion)
+                    .apply()
 
                 Result.success(Unit)
             } catch (e: Exception) {

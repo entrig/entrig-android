@@ -112,6 +112,48 @@ Entrig.setOnNotificationOpenedListener { notification ->
 }
 ```
 
+### Deeplink Support
+
+Set a deeplink URL on your notification in the Entrig dashboard (e.g., `myapp://chat/abc123`). When the user taps the notification, `notification.deeplink` is available in your listener.
+
+**Automatic deeplink handling:**
+
+Enable `autoOpenDeeplink` to have the SDK fire an `ACTION_VIEW` intent automatically when the notification is tapped, routing directly to the activity registered for that scheme:
+
+```kotlin
+val config = EntrigConfig(
+    apiKey = "your-entrig-api-key",
+    autoOpenDeeplink = true
+)
+Entrig.initialize(this, config)
+```
+
+Register the URL scheme in your `AndroidManifest.xml` on the target activity:
+
+```xml
+<intent-filter>
+    <action android:name="android.intent.action.VIEW"/>
+    <category android:name="android.intent.category.DEFAULT"/>
+    <category android:name="android.intent.category.BROWSABLE"/>
+    <data android:scheme="myapp" android:host="chat"/>
+</intent-filter>
+```
+
+> **Note:** When `autoOpenDeeplink` is enabled, `setOnNotificationOpenedListener` still fires. Do not also navigate from that listener — pick one approach.
+
+**Manual deeplink handling:**
+
+Leave `autoOpenDeeplink` disabled (default) and read `notification.deeplink` in your tap listener:
+
+```kotlin
+Entrig.setOnNotificationOpenedListener { notification ->
+    notification.deeplink?.let { url ->
+        val uri = Uri.parse(url)
+        // navigate based on uri
+    }
+}
+```
+
 ### Payload Data Shape
 
 `notification.data` only includes the fields you selected while configuring the notification in Entrig.

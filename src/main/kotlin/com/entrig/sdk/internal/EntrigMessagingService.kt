@@ -50,7 +50,7 @@ class EntrigMessagingService : FirebaseMessagingService() {
 
         // Show notification based on foreground state and config
         val isInForeground = Entrig.isAppInForeground
-        val showForegroundNotification = Entrig.config?.showForegroundNotification ?: true
+        val showForegroundNotification = Entrig.config?.showForegroundNotification ?: false
 
         if (!isInForeground || showForegroundNotification) {
             // Show notification if app is in background/terminated OR if foreground notifications are enabled
